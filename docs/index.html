@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThreatIntel-Dashboard</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="wrap title-row">
+      <div>
+        <h1>ThreatIntel-Dashboard</h1>
+        <div class="subtle">Public cybersecurity intel feed for SOC, OSINT, exploit, and red-team monitoring.</div>
+      </div>
+      <div class="subtle" id="last-updated">Loading latest update…</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="panel span-12 advisory">
+        <div class="section-title">
+          <h2>Cybersecurity Vigilance Advisory</h2>
+          <a href="advisory.html" target="_blank" rel="noopener">Open advisory</a>
+        </div>
+        <div class="subtle">
+          Stay vigilant and proactively harden your posture against targeted attacks, phishing, malware, ransomware, defacements, DDoS, and exploitation of unpatched systems.
+        </div>
+      </section>
+
+      <section class="panel span-12">
+        <div class="section-title">
+          <h2>Executive Summary</h2>
+          <div class="subtle">Auto-generated every 3 hours</div>
+        </div>
+        <div class="stats" id="stats">
+          <div class="stat"><div class="label">Last 3 hours</div><div class="value" id="count-3h">0</div></div>
+          <div class="stat"><div class="label">Last 24 hours</div><div class="value" id="count-24h">0</div></div>
+          <div class="stat"><div class="label">Unique sources</div><div class="value" id="count-sources">0</div></div>
+          <div class="stat"><div class="label">High risk items</div><div class="value" id="count-high">0</div></div>
+        </div>
+
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="Filter by keyword, source, tag…" />
+          <select id="window">
+            <option value="all">All windows</option>
+            <option value="3h">Last 3 hours</option>
+            <option value="24h">Last 24 hours</option>
+          </select>
+          <select id="sort">
+            <option value="newest">Sort: newest first</option>
+            <option value="risk">Sort: highest risk first</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="section-title">
+          <h2>Last 3 Hours</h2>
+          <span class="subtle" id="meta-3h">0 items</span>
+        </div>
+        <div class="lists" id="list-3h"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="section-title">
+          <h2>Last 24 Hours</h2>
+          <span class="subtle" id="meta-24h">0 items</span>
+        </div>
+        <div class="lists" id="list-24h"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Built for threat intel, OSINT, exploit awareness, and SOC monitoring.
+  </footer>
+
+  <script>
+    const DATA_URL = 'data/latest.json';
+
+    const els = {
+      lastUpdated: document.getElementById('last-updated'),
+      count3h: document.getElementById('count-3h'),
+      count24h: document.getElementById('count-24h'),
+      countSources: document.getElementById('count-sources'),
+      countHigh: document.getElementById('count-high'),
+      meta3h: document.getElementById('meta-3h'),
+      meta24h: document.getElementById('meta-24h'),
+      list3h: document.getElementById('list-3h'),
+      list24h: document.getElementById('list-24h'),
+      search: document.getElementById('search'),
+      window: document.getElementById('window'),
+      sort: document.getElementById('sort'),
+    };
+
+    let state = null;
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>'"]/g, (c) => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
+      }[c]));
+    }
+
+    function badgeClass(score) {
+      if (score >= 4) return 'bad';
+      if (score === 3) return 'warn';
+      return 'good';
+    }
+
+    function renderItem(item) {
+      const tags = (item.tags || []).map(t => `<span class="badge">${esc(t)}</span>`).join('');
+      const score = item.risk_score ?? 0;
+      return `
+        <article class="item">
+          <div class="item-top">
+            <div class="item-title"><a href="${esc(item.link)}" target="_blank" rel="noopener">${esc(item.title)}</a></div>
+            <div><span class="badge ${badgeClass(score)}">Risk ${score}/5</span></div>
+          </div>
+          <div>${tags}</div>
+          <div class="meta">
+            <strong>${esc(item.source)}</strong> · ${esc(item.category || 'Unclassified')} · ${esc(item.published_local || item.published_utc || '')}
+          </div>
+          ${item.summary ? `<div class="summary">${esc(item.summary)}</div>` : ''}
+        </article>
+      `;
+    }
+
+    function passes(item, query, windowFilter) {
+      const text = `${item.title} ${item.summary || ''} ${item.source} ${(item.tags || []).join(' ')}`.toLowerCase();
+      const okQuery = !query || text.includes(query);
+      const okWindow =
+        windowFilter === 'all' ||
+        (windowFilter === '3h' && item.section === '3h') ||
+        (windowFilter === '24h' && item.section === '24h');
+      return okQuery && okWindow;
+    }
+
+    function sortItems(items) {
+      const mode = els.sort.value;
+      return [...items].sort((a, b) => {
+        if (mode === 'risk') {
+          if ((b.risk_score ?? 0) !== (a.risk_score ?? 0)) return (b.risk_score ?? 0) - (a.risk_score ?? 0);
+        }
+        return (new Date(b.published_utc || 0)) - (new Date(a.published_utc || 0));
+      });
+    }
+
+    function redraw() {
+      if (!state) return;
+      const q = els.search.value.trim().toLowerCase();
+      const win = els.window.value;
+
+      const filtered3h = sortItems(state.windows['3h'].filter(i => passes(i, q, win)));
+      const filtered24h = sortItems(state.windows['24h'].filter(i => passes(i, q, win)));
+
+      els.list3h.innerHTML = filtered3h.length ? filtered3h.map(renderItem).join('') : '<div class="subtle">No matching items.</div>';
+      els.list24h.innerHTML = filtered24h.length ? filtered24h.map(renderItem).join('') : '<div class="subtle">No matching items.</div>';
+
+      els.meta3h.textContent = `${filtered3h.length} items shown`;
+      els.meta24h.textContent = `${filtered24h.length} items shown`;
+
+      const uniqueSources = new Set([...state.windows['3h'], ...state.windows['24h']].map(i => i.source));
+      const highRisk = [...state.windows['3h'], ...state.windows['24h']].filter(i => (i.risk_score ?? 0) >= 4).length;
+
+      els.count3h.textContent = state.windows['3h'].length;
+      els.count24h.textContent = state.windows['24h'].length;
+      els.countSources.textContent = uniqueSources.size;
+      els.countHigh.textContent = highRisk;
+      els.lastUpdated.textContent = `Last refresh: ${state.generated_at_ist || state.generated_at_utc || 'unknown'}`;
+    }
+
+    async function init() {
+      try {
+        const res = await fetch(DATA_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        state = await res.json();
+        redraw();
+      } catch (err) {
+        els.lastUpdated.textContent = 'Waiting for the first automated refresh.';
+        els.list3h.innerHTML = '<div class="subtle">No data available yet.</div>';
+        els.list24h.innerHTML = '<div class="subtle">No data available yet.</div>';
+      }
+    }
+
+    ['input', 'change'].forEach(evt => {
+      els.search.addEventListener(evt, redraw);
+      els.window.addEventListener(evt, redraw);
+      els.sort.addEventListener(evt, redraw);
+    });
+
+    init();
+  </script>
+</body>
+</html>
