@@ -1,0 +1,88 @@
+{
+  "feeds": [
+    {
+      "name": "The Hacker News",
+      "url": "https://feeds.feedburner.com/TheHackersNews",
+      "category": "Global News"
+    },
+    {
+      "name": "BleepingComputer",
+      "url": "https://www.bleepingcomputer.com/feed/",
+      "category": "Global News"
+    },
+    {
+      "name": "KrebsOnSecurity",
+      "url": "https://krebsonsecurity.com/feed/",
+      "category": "Global News"
+    },
+    {
+      "name": "SecurityWeek",
+      "url": "https://feeds.feedburner.com/securityweek",
+      "category": "Global News"
+    },
+    {
+      "name": "Dark Reading",
+      "url": "https://www.darkreading.com/rss.xml",
+      "category": "Global News"
+    },
+    {
+      "name": "CISA Alerts",
+      "url": "https://www.cisa.gov/news-events/alerts.xml",
+      "category": "National / Government"
+    },
+    {
+      "name": "CERT-In Advisories",
+      "url": "https://www.cert-in.org.in/RSSFeed.jsp",
+      "category": "National / Government"
+    },
+    {
+      "name": "SANS ISC",
+      "url": "https://isc.sans.edu/rssfeed.xml",
+      "category": "Global News"
+    },
+    {
+      "name": "Exploit-DB",
+      "url": "https://www.exploit-db.com/rss.xml",
+      "category": "Exploits"
+    },
+    {
+      "name": "Packet Storm",
+      "url": "https://packetstormsecurity.com/files/feed.xml",
+      "category": "Exploits"
+    },
+    {
+      "name": "HackerOne Blog",
+      "url": "https://hackerone.com/blog.rss",
+      "category": "Red Team / Offensive Security"
+    },
+    {
+      "name": "The DFIR Report",
+      "url": "https://thedfirreport.com/feed/",
+      "category": "Threat Research"
+    },
+    {
+      "name": "OSINTCurio.us",
+      "url": "https://osintcurio.us/feed/",
+      "category": "OSINT"
+    },
+    {
+      "name": "IntelTechniques",
+      "url": "https://inteltechniques.com/blog/feed/",
+      "category": "OSINT"
+    },
+    {
+      "name": "Red Team Village",
+      "url": "https://redteamvillage.io/feed",
+      "category": "Red Team / Offensive Security"
+    }
+  ],
+  "email": {
+    "enabled": false,
+    "smtp_host": "",
+    "smtp_port": 587,
+    "smtp_username": "",
+    "smtp_password": "",
+    "smtp_from": "",
+    "alert_email_to": ""
+  }
+}
