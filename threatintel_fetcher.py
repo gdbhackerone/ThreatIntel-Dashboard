@@ -1,14 +1,4 @@
     #!/usr/bin/env python3
-    """
-    ThreatIntel-Dashboard fetcher.
-
-    - Pulls RSS/Atom feeds
-    - Filters into last 3 hours and last 24 hours
-    - Classifies items into simple tags
-    - Generates docs/data/latest.json and docs/data/latest.md
-    - Optionally sends email if SMTP settings are configured
-    """
-
     from __future__ import annotations
 
     import calendar
